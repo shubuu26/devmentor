@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "devmentor"
+version = "0.1.0"
+description = "An open-source AI coding assistant agent using open-weight LLMs, built for Hacktoberfest 2026"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [
+    { name = "DevMentor Contributors" }
+]
+keywords = ["ai", "llm", "code-review", "agent", "open-source", "hacktoberfest"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.0",
+    "typer[all]>=0.12.0",
+    "rich>=13.7.0",
+    "python-dotenv>=1.0.0",
+    "PyYAML>=6.0.1",
+    "jinja2>=3.1.4",
+    "tiktoken>=0.7.0",
+    "anyio>=4.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-httpx>=0.30.0",
+    "httpx>=0.27.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+    "pre-commit>=3.7.0",
+]
+notebook = [
+    "jupyter>=1.0.0",
+    "ipykernel>=6.29.0",
+]
+
+[project.scripts]
+devmentor = "devmentor.cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/your-username/devmentor"
+Repository = "https://github.com/your-username/devmentor"
+Issues = "https://github.com/your-username/devmentor/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["devmentor"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

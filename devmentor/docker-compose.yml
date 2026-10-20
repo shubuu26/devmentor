@@ -1,0 +1,89 @@
+version: "3.9"
+
+# ── DevMentor — full stack with Ollama ────────────────────────────────────────
+#
+# Usage:
+#   docker compose up -d            # start everything
+#   docker compose exec ollama ollama pull mistral:7b   # pull a model
+#   curl http://localhost:8000/health                   # verify API
+#   docker compose down                                 # stop
+#
+# GPU (NVIDIA) note:
+#   Add `deploy.resources.reservations.devices` under the ollama service
+#   and ensure the NVIDIA container runtime is installed on the host.
+
+services:
+  # ── Ollama — local open-weight LLM server ────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: devmentor-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    # Uncomment for NVIDIA GPU:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # ── Model pull — runs once to pull the default model ─────────────────────────
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: devmentor-ollama-pull
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "OLLAMA_HOST=ollama ollama pull ${OLLAMA_MODEL:-mistral:7b} && echo 'Model ready'"
+    environment:
+      - OLLAMA_HOST=ollama
+    restart: "no"
+
+  # ── DevMentor API server ──────────────────────────────────────────────────────
+  devmentor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: devmentor-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - DEVMENTOR_BACKEND=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral:7b}
+      - MAX_NEW_TOKENS=${MAX_NEW_TOKENS:-2048}
+      - TEMPERATURE=${TEMPERATURE:-0.2}
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    volumes:
+      # Mount skills directory so custom skills can be added without rebuild
+      - ./skills:/app/skills:ro
+
+volumes:
+  ollama_data:
+    driver: local
